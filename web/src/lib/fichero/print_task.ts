@@ -82,7 +82,6 @@ export class FicheroPrintTask extends AbstractPrintTask {
       payload.set(header, 0);
       payload.set(image.rowsData, header.length);
 
-      console.log("DEBUG sending raster, payload length:", payload.length, "cols:", image.cols, "rows:", image.rows);
       
       await this.sendChunked(payload);
       await Utils.sleep(500);
