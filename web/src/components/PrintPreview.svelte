@@ -124,8 +124,12 @@
       await generatePreviewData(page);
 
       try {
-        const encoded: EncodedImage = ImageEncoder.encodeCanvas(previewCanvas, labelProps.printDirection);
-        await currentPrintTask.printInit();
+        const bytesPerRow = ($printerMeta?.printheadPixels ?? 96) / 8;
+        console.log("DEBUG printerMeta:", $printerMeta);
+        console.log("DEBUG bytesPerRow:", bytesPerRow);
+        console.log("DEBUG canvas size:", previewCanvas.width, "x", previewCanvas.height);
+        const encoded: EncodedImage = ImageEncoder.encodeCanvas(previewCanvas, labelProps.printDirection, bytesPerRow);
+        console.log("DEBUG encoded rows:", encoded.rows, "rowsData length:", encoded.rowsData.length);        await currentPrintTask.printInit();
         await currentPrintTask.printPage(encoded, quantity);
       } catch (e) {
         error = `${e}`;

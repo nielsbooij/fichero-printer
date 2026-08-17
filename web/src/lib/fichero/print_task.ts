@@ -76,12 +76,14 @@ export class FicheroPrintTask extends AbstractPrintTask {
       // Raster header: GS v 0 mode xL xH yL yH
       const yL = image.rows & 0xff;
       const yH = (image.rows >> 8) & 0xff;
-      const header = new Uint8Array([0x1d, 0x76, 0x30, 0x00, BYTES_PER_ROW, 0x00, yL, yH]);
+      const header = new Uint8Array([0x1d, 0x76, 0x30, 0x00, image.cols, 0x00, yL, yH]);
 
       const payload = new Uint8Array(header.length + image.rowsData.length);
       payload.set(header, 0);
       payload.set(image.rowsData, header.length);
 
+      console.log("DEBUG sending raster, payload length:", payload.length, "cols:", image.cols, "rows:", image.rows);
+      
       await this.sendChunked(payload);
       await Utils.sleep(500);
 
@@ -96,7 +98,7 @@ export class FicheroPrintTask extends AbstractPrintTask {
       });
 
       // Stop print and wait for response
-      await this.sendCmd(Array.from(CMD.stopPrint), true, 60000);
+      await this.sendCmd(Array.from(CMD.stopPrint), true, 5000);
 
       this.emitProgress({
         page: copy + 1,

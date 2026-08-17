@@ -1,8 +1,15 @@
+// Fichero D11s
 export const SERVICE_UUID = "000018f0-0000-1000-8000-00805f9b34fb";
 export const WRITE_CHAR_UUID = "00002af1-0000-1000-8000-00805f9b34fb";
 export const NOTIFY_CHAR_UUID = "00002af0-0000-1000-8000-00805f9b34fb";
-
 export const PRINTHEAD_PX = 96;
+
+// Fichero 3561
+export const SERVICE_UUID_3561 = "e7810a71-73ae-499d-8c15-faa9aef0c3f2";
+export const WRITE_CHAR_UUID_3561 = "bef8d6c9-9c21-4c9e-b632-bd58c1009f9f";
+export const NOTIFY_CHAR_UUID_3561 = "bef8d6c9-9c21-4c9e-b632-bd58c1009f9f";
+export const PRINTHEAD_PX_3561 = 384;
+
 export const BYTES_PER_ROW = 12;
 export const CHUNK_SIZE = 200;
 export const CHUNK_DELAY_MS = 20;

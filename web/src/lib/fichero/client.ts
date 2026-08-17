@@ -1,7 +1,12 @@
 import {
   SERVICE_UUID,
+  SERVICE_UUID_3561,
   WRITE_CHAR_UUID,
+  WRITE_CHAR_UUID_3561,
   NOTIFY_CHAR_UUID,
+  NOTIFY_CHAR_UUID_3561,
+  PRINTHEAD_PX,
+  PRINTHEAD_PX_3561,
   CHUNK_SIZE,
   CHUNK_DELAY_MS,
   CMD,
@@ -53,6 +58,7 @@ export class FicheroClient extends TypedEventEmitter<ClientEventMap> {
   private heartbeatFailCount = 0;
   private packetIntervalMs = 20;
   private info: PrinterInfo = {};
+  private is3561 = false;
 
   readonly abstraction = {
     newPrintTask: (
@@ -103,10 +109,14 @@ export class FicheroClient extends TypedEventEmitter<ClientEventMap> {
     let device: BluetoothDevice;
 
     try {
-      device = await navigator.bluetooth.requestDevice({
-        filters: [{ namePrefix: "FICHERO" }, { namePrefix: "D11s_" }],
-        optionalServices: [SERVICE_UUID],
-      });
+    device = await navigator.bluetooth.requestDevice({
+      filters: [
+        { namePrefix: "FICHERO" },
+        { namePrefix: "Fichero" },
+        { namePrefix: "D11s_" },
+      ],
+      optionalServices: [SERVICE_UUID, SERVICE_UUID_3561],
+    });
     } catch {
       throw new Error("No device selected");
     }
@@ -114,14 +124,29 @@ export class FicheroClient extends TypedEventEmitter<ClientEventMap> {
     device.addEventListener("gattserverdisconnected", () => this.onDisconnected());
 
     const server = await device.gatt!.connect();
-    const service = await server.getPrimaryService(SERVICE_UUID);
-    this.writeChar = await service.getCharacteristic(WRITE_CHAR_UUID);
-    this.notifyChar = await service.getCharacteristic(NOTIFY_CHAR_UUID);
+
+    // Detecteer welke service beschikbaar is
+    let service: BluetoothRemoteGATTService;
+    let is3561 = false;
+
+    try {
+      service = await server.getPrimaryService(SERVICE_UUID_3561);
+      is3561 = true;
+    } catch {
+      service = await server.getPrimaryService(SERVICE_UUID);
+    }
+
+    const writeUuid = is3561 ? WRITE_CHAR_UUID_3561 : WRITE_CHAR_UUID;
+    const notifyUuid = is3561 ? NOTIFY_CHAR_UUID_3561 : NOTIFY_CHAR_UUID;
+
+    this.writeChar = await service.getCharacteristic(writeUuid);
+    this.notifyChar = await service.getCharacteristic(notifyUuid);
+    this.is3561 = is3561;
+
     await this.notifyChar.startNotifications();
     this.notifyChar.addEventListener("characteristicvaluechanged", (e: Event) => this.onNotify(e));
 
     this.device = device;
-
     this.emit("connect", { info: { deviceName: device.name } });
 
     await this.fetchPrinterInfo();
@@ -142,6 +167,7 @@ export class FicheroClient extends TypedEventEmitter<ClientEventMap> {
     this.writeChar = null;
     this.notifyChar = null;
     this.info = {};
+    this.is3561 = false;
     this.emit("disconnect", undefined as unknown as void);
   }
 
@@ -255,12 +281,12 @@ export class FicheroClient extends TypedEventEmitter<ClientEventMap> {
   getModelMetadata(): PrinterModelMeta {
     return {
       model: this.info.modelId ?? "D11s",
-      printheadPixels: 96,
-      printDirection: "left" as const,
+      printheadPixels: this.is3561 ? PRINTHEAD_PX_3561 : PRINTHEAD_PX,
+      printDirection: this.is3561 ? "top" as const : "left" as const,
       densityMin: 0,
       densityMax: 2,
       densityDefault: 2,
-      paperTypes: [1, 2, 3], // LabelType values
+      paperTypes: [1, 2, 3],
     };
   }
 
